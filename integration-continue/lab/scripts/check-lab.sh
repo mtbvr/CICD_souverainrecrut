@@ -6,7 +6,7 @@
 set -uo pipefail
 
 LAB_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$LAB_DIR"
+cd "$LAB_DIR" || exit 1
 
 JP="$(grep -E '^JENKINS_PORT=' .env 2>/dev/null | cut -d= -f2)"; export JP="${JP:-8080}"
 SP="$(grep -E '^SONAR_PORT=' .env 2>/dev/null | cut -d= -f2)";   export SP="${SP:-9000}"

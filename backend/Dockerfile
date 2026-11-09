@@ -53,10 +53,16 @@ ENV NODE_ENV=production \
     PORT=4000 \
     API_VERSION=v1
 
-# Dépendances de production uniquement (bcrypt compilé via ses scripts)
+# Dépendances de production uniquement (bcrypt compilé via ses scripts),
+# puis suppression des gestionnaires de paquets : inutiles à l'exécution,
+# ils embarquent leurs propres dépendances (surface d'attaque, CVE).
+# Les migrations utilisent directement node_modules/.bin/prisma.
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev \
- && npm cache clean --force
+ && npm cache clean --force \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+           /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+           /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg /root/.npm
 
 # Code compilé, schéma/migrations Prisma et client Prisma généré
 COPY --from=builder /app/dist ./dist

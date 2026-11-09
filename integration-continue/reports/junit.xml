@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="97" failures="0" errors="0" time="15.046">
+  <testsuite name="config/env" errors="0" failures="0" skipped="0" timestamp="2026-11-09T16:36:58" time="9.357" tests="4">
+    <testcase classname="config/env" name="applique les valeurs par défaut en l&apos;absence de variables" time="0.118">
+    </testcase>
+    <testcase classname="config/env" name="lit les variables d&apos;environnement fournies" time="0.002">
+    </testcase>
+    <testcase classname="middlewares/logger" name="utilise le format &apos;combined&apos; en production" time="0.085">
+    </testcase>
+    <testcase classname="middlewares/logger" name="utilise le format &apos;dev&apos; hors production, désactivé en test" time="0.004">
+    </testcase>
+  </testsuite>
+  <testsuite name="utils/pagination" errors="0" failures="0" skipped="0" timestamp="2026-11-09T16:36:58" time="9.442" tests="10">
+    <testcase classname="utils/pagination getPagination" name="applique les valeurs par défaut (page 1, limite 10)" time="0.026">
+    </testcase>
+    <testcase classname="utils/pagination getPagination" name="calcule le décalage à partir de la page et de la limite" time="0.002">
+    </testcase>
+    <testcase classname="utils/pagination getPagination" name="ramène une page négative ou nulle à 1" time="0.001">
+    </testcase>
+    <testcase classname="utils/pagination getPagination" name="borne la limite entre 1 et 100" time="0.001">
+    </testcase>
+    <testcase classname="utils/pagination buildPaginationMeta" name="calcule le nombre total de pages" time="0.001">
+    </testcase>
+    <testcase classname="utils/pagination buildPaginationMeta" name="retourne 0 page quand il n&apos;y a aucun élément" time="0">
+    </testcase>
+    <testcase classname="utils/asyncHandler" name="transmet les erreurs asynchrones à next()" time="0.003">
+    </testcase>
+    <testcase classname="utils/asyncHandler" name="n&apos;appelle pas next() quand le handler réussit" time="0.003">
+    </testcase>
+    <testcase classname="errors/AppError" name="porte le message et le code HTTP fournis" time="0.004">
+    </testcase>
+    <testcase classname="errors/AppError" name="utilise le code 500 par défaut" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="ApplicationService.updateStatus" errors="0" failures="0" skipped="0" timestamp="2026-11-09T16:36:58" time="9.499" tests="2">
+    <testcase classname="ApplicationService.updateStatus" name="met à jour uniquement le statut" time="0.036">
+    </testcase>
+    <testcase classname="ApplicationService.updateStatus" name="lève une 404 si la candidature n&apos;existe pas" time="0.008">
+    </testcase>
+  </testsuite>
+  <testsuite name="pagination par défaut des services et repositories" errors="0" failures="0" skipped="0" timestamp="2026-11-09T16:36:58" time="9.556" tests="8">
+    <testcase classname="pagination par défaut des services et repositories" name="ApplicationRepository utilise skip=0 et take=10" time="0.046">
+    </testcase>
+    <testcase classname="pagination par défaut des services et repositories" name="CandidateRepository utilise skip=0 et take=10" time="0.015">
+    </testcase>
+    <testcase classname="pagination par défaut des services et repositories" name="JobRepository utilise skip=0 et take=10" time="0.011">
+    </testcase>
+    <testcase classname="pagination par défaut des services et repositories" name="UserRepository utilise skip=0 et take=10" time="0.017">
+    </testcase>
+    <testcase classname="pagination par défaut des services et repositories" name="ApplicationService utilise skip=0 et take=10" time="0.015">
+    </testcase>
+    <testcase classname="pagination par défaut des services et repositories" name="CandidateService utilise skip=0 et take=10" time="0.021">
+    </testcase>
+    <testcase classname="pagination par défaut des services et repositories" name="JobService utilise skip=0 et take=10" time="0.047">
+    </testcase>
+    <testcase classname="pagination par défaut des services et repositories" name="UserService utilise skip=0 et take=10" time="0.016">
+    </testcase>
+  </testsuite>
+  <testsuite name="middlewares/authorize" errors="0" failures="0" skipped="0" timestamp="2026-11-09T16:36:58" time="9.624" tests="7">
+    <testcase classname="middlewares/authorize" name="refuse (401) une requête sans utilisateur authentifié" time="0.023">
+    </testcase>
+    <testcase classname="middlewares/authorize" name="refuse (403) un rôle non autorisé" time="0.001">
+    </testcase>
+    <testcase classname="middlewares/authorize" name="laisse passer un rôle autorisé" time="0.002">
+    </testcase>
+    <testcase classname="middlewares/validate" name="retourne 400 avec le détail des champs invalides" time="0.008">
+    </testcase>
+    <testcase classname="middlewares/validate" name="remplace le body par les données validées" time="0.002">
+    </testcase>
+    <testcase classname="middlewares/error" name="renvoie le code et le message d&apos;une AppError" time="0.002">
+    </testcase>
+    <testcase classname="middlewares/error" name="masque les erreurs inattendues derrière un 500 générique" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="API – tableau de bord (/v1/dashboard)" errors="0" failures="0" skipped="0" timestamp="2026-11-09T16:36:58" time="12.153" tests="2">
+    <testcase classname="API – tableau de bord (/v1/dashboard)" name="GET /stats agrège les compteurs de la plateforme" time="0.16">
+    </testcase>
+    <testcase classname="API – tableau de bord (/v1/dashboard)" name="refuse (401) l&apos;accès sans authentification" time="0.035">
+    </testcase>
+  </testsuite>
+  <testsuite name="API – routes générales" errors="0" failures="0" skipped="0" timestamp="2026-11-09T16:36:58" time="12.304" tests="8">
+    <testcase classname="API – routes générales" name="GET / retourne le message d&apos;accueil" time="0.161">
+    </testcase>
+    <testcase classname="API – routes générales" name="ne révèle pas le framework via l&apos;en-tête X-Powered-By" time="0.023">
+    </testcase>
+    <testcase classname="API – routes générales" name="GET /api-docs/ sert la documentation Swagger" time="0.027">
+    </testcase>
+    <testcase classname="API – routes générales" name="GET /v1/info retourne les informations de l&apos;API" time="0.022">
+    </testcase>
+    <testcase classname="API – routes générales" name="retourne 404 pour une route inconnue" time="0.019">
+    </testcase>
+    <testcase classname="API – health checks" name="GET /v1/health indique que l&apos;API est UP" time="0.019">
+    </testcase>
+    <testcase classname="API – health checks" name="GET /v1/ready renvoie 200 quand la base répond" time="0.018">
+    </testcase>
+    <testcase classname="API – health checks" name="GET /v1/ready renvoie 503 quand la base est indisponible" time="0.022">
+    </testcase>
+  </testsuite>
+  <testsuite name="API – authentification" errors="0" failures="0" skipped="0" timestamp="2026-11-09T16:36:58" time="12.404" tests="10">
+    <testcase classname="API – authentification POST /v1/auth/login" name="retourne un JWT et l&apos;utilisateur sans mot de passe" time="0.212">
+    </testcase>
+    <testcase classname="API – authentification POST /v1/auth/login" name="refuse (401) un email inconnu" time="0.033">
+    </testcase>
+    <testcase classname="API – authentification POST /v1/auth/login" name="refuse (401) un mot de passe incorrect" time="0.03">
+    </testcase>
+    <testcase classname="API – authentification GET /v1/auth/me" name="retourne le profil de l&apos;utilisateur connecté" time="0.026">
+    </testcase>
+    <testcase classname="API – authentification GET /v1/auth/me" name="renvoie 404 si l&apos;utilisateur n&apos;existe plus" time="0.022">
+    </testcase>
+    <testcase classname="API – authentification contrôle du token (authMiddleware)" name="refuse (401) une requête sans header Authorization" time="0.021">
+    </testcase>
+    <testcase classname="API – authentification contrôle du token (authMiddleware)" name="refuse (401) un schéma autre que Bearer" time="0.02">
+    </testcase>
+    <testcase classname="API – authentification contrôle du token (authMiddleware)" name="refuse (401) un header Bearer sans token" time="0.02">
+    </testcase>
+    <testcase classname="API – authentification contrôle du token (authMiddleware)" name="refuse (401) un token signé avec une autre clé" time="0.022">
+    </testcase>
+    <testcase classname="API – authentification contrôle du token (authMiddleware)" name="refuse (401) un token expiré" time="0.021">
+    </testcase>
+  </testsuite>
+  <testsuite name="API – offres d&apos;emploi (/v1/jobs)" errors="0" failures="0" skipped="0" timestamp="2026-11-09T16:36:58" time="12.383" tests="10">
+    <testcase classname="API – offres d&apos;emploi (/v1/jobs) GET /" name="retourne la liste paginée des offres (limite par défaut)" time="0.16">
+    </testcase>
+    <testcase classname="API – offres d&apos;emploi (/v1/jobs) GET /:id" name="retourne l&apos;offre demandée" time="0.03">
+    </testcase>
+    <testcase classname="API – offres d&apos;emploi (/v1/jobs) GET /:id" name="renvoie 404 pour une offre inexistante" time="0.025">
+    </testcase>
+    <testcase classname="API – offres d&apos;emploi (/v1/jobs) POST /" name="crée une offre" time="0.064">
+    </testcase>
+    <testcase classname="API – offres d&apos;emploi (/v1/jobs) POST /" name="renvoie 400 si des champs obligatoires manquent" time="0.028">
+    </testcase>
+    <testcase classname="API – offres d&apos;emploi (/v1/jobs) PUT /:id" name="met à jour une offre existante" time="0.026">
+    </testcase>
+    <testcase classname="API – offres d&apos;emploi (/v1/jobs) PUT /:id" name="renvoie 404 si l&apos;offre n&apos;existe pas" time="0.027">
+    </testcase>
+    <testcase classname="API – offres d&apos;emploi (/v1/jobs) DELETE /:id" name="permet à un ADMIN de supprimer une offre" time="0.026">
+    </testcase>
+    <testcase classname="API – offres d&apos;emploi (/v1/jobs) DELETE /:id" name="refuse (403) la suppression à un RECRUITER" time="0.025">
+    </testcase>
+    <testcase classname="API – offres d&apos;emploi (/v1/jobs) DELETE /:id" name="renvoie 404 si l&apos;offre n&apos;existe pas" time="0.025">
+    </testcase>
+  </testsuite>
+  <testsuite name="API – candidatures (/v1/applications)" errors="0" failures="0" skipped="0" timestamp="2026-11-09T16:36:58" time="12.392" tests="10">
+    <testcase classname="API – candidatures (/v1/applications) GET /" name="retourne les candidatures avec candidat et offre" time="0.157">
+    </testcase>
+    <testcase classname="API – candidatures (/v1/applications) GET /:id" name="retourne la candidature demandée" time="0.029">
+    </testcase>
+    <testcase classname="API – candidatures (/v1/applications) GET /:id" name="renvoie 404 pour une candidature inexistante" time="0.027">
+    </testcase>
+    <testcase classname="API – candidatures (/v1/applications) POST /" name="crée une candidature" time="0.063">
+    </testcase>
+    <testcase classname="API – candidatures (/v1/applications) POST /" name="renvoie 400 pour un statut inconnu" time="0.033">
+    </testcase>
+    <testcase classname="API – candidatures (/v1/applications) PUT /:id" name="met à jour le statut d&apos;une candidature" time="0.025">
+    </testcase>
+    <testcase classname="API – candidatures (/v1/applications) PUT /:id" name="renvoie 400 si le statut est absent" time="0.025">
+    </testcase>
+    <testcase classname="API – candidatures (/v1/applications) PUT /:id" name="renvoie 404 si la candidature n&apos;existe pas" time="0.029">
+    </testcase>
+    <testcase classname="API – candidatures (/v1/applications) DELETE /:id" name="permet à un ADMIN de supprimer une candidature" time="0.025">
+    </testcase>
+    <testcase classname="API – candidatures (/v1/applications) DELETE /:id" name="refuse (403) la suppression à un RECRUITER" time="0.025">
+    </testcase>
+  </testsuite>
+  <testsuite name="API – candidats (/v1/candidates)" errors="0" failures="0" skipped="0" timestamp="2026-11-09T16:36:58" time="12.504" tests="12">
+    <testcase classname="API – candidats (/v1/candidates) GET /" name="retourne la liste paginée des candidats" time="0.159">
+    </testcase>
+    <testcase classname="API – candidats (/v1/candidates) GET /" name="refuse (401) l&apos;accès sans authentification" time="0.033">
+    </testcase>
+    <testcase classname="API – candidats (/v1/candidates) GET /:id" name="retourne le candidat demandé" time="0.026">
+    </testcase>
+    <testcase classname="API – candidats (/v1/candidates) GET /:id" name="renvoie 404 pour un candidat inexistant" time="0.023">
+    </testcase>
+    <testcase classname="API – candidats (/v1/candidates) POST /" name="crée un candidat avec un email normalisé en minuscules" time="0.068">
+    </testcase>
+    <testcase classname="API – candidats (/v1/candidates) POST /" name="renvoie 409 si l&apos;email existe déjà" time="0.029">
+    </testcase>
+    <testcase classname="API – candidats (/v1/candidates) POST /" name="renvoie 400 pour des données invalides" time="0.03">
+    </testcase>
+    <testcase classname="API – candidats (/v1/candidates) PUT /:id" name="met à jour un candidat existant" time="0.027">
+    </testcase>
+    <testcase classname="API – candidats (/v1/candidates) PUT /:id" name="renvoie 404 si le candidat n&apos;existe pas" time="0.026">
+    </testcase>
+    <testcase classname="API – candidats (/v1/candidates) DELETE /:id" name="permet à un ADMIN de supprimer un candidat" time="0.025">
+    </testcase>
+    <testcase classname="API – candidats (/v1/candidates) DELETE /:id" name="refuse (403) la suppression à un RECRUITER" time="0.023">
+    </testcase>
+    <testcase classname="API – candidats (/v1/candidates) DELETE /:id" name="renvoie 404 si le candidat n&apos;existe pas" time="0.026">
+    </testcase>
+  </testsuite>
+  <testsuite name="API – utilisateurs (/v1/users, ADMIN uniquement)" errors="0" failures="0" skipped="0" timestamp="2026-11-09T16:36:58" time="12.743" tests="14">
+    <testcase classname="API – utilisateurs (/v1/users, ADMIN uniquement) contrôle d&apos;accès" name="refuse (403) get /v1/users à un RECRUITER" time="0.152">
+    </testcase>
+    <testcase classname="API – utilisateurs (/v1/users, ADMIN uniquement) contrôle d&apos;accès" name="refuse (403) get /v1/users/user-1 à un RECRUITER" time="0.025">
+    </testcase>
+    <testcase classname="API – utilisateurs (/v1/users, ADMIN uniquement) contrôle d&apos;accès" name="refuse (403) post /v1/users à un RECRUITER" time="0.02">
+    </testcase>
+    <testcase classname="API – utilisateurs (/v1/users, ADMIN uniquement) contrôle d&apos;accès" name="refuse (403) put /v1/users/user-1 à un RECRUITER" time="0.02">
+    </testcase>
+    <testcase classname="API – utilisateurs (/v1/users, ADMIN uniquement) contrôle d&apos;accès" name="refuse (403) delete /v1/users/user-1 à un RECRUITER" time="0.021">
+    </testcase>
+    <testcase classname="API – utilisateurs (/v1/users, ADMIN uniquement) GET /" name="retourne la liste paginée des utilisateurs" time="0.023">
+    </testcase>
+    <testcase classname="API – utilisateurs (/v1/users, ADMIN uniquement) GET /:id" name="retourne l&apos;utilisateur demandé" time="0.024">
+    </testcase>
+    <testcase classname="API – utilisateurs (/v1/users, ADMIN uniquement) GET /:id" name="renvoie 404 pour un utilisateur inexistant" time="0.024">
+    </testcase>
+    <testcase classname="API – utilisateurs (/v1/users, ADMIN uniquement) POST /" name="crée un utilisateur avec un mot de passe haché" time="0.281">
+    </testcase>
+    <testcase classname="API – utilisateurs (/v1/users, ADMIN uniquement) POST /" name="renvoie 409 si l&apos;email est déjà utilisé" time="0.027">
+    </testcase>
+    <testcase classname="API – utilisateurs (/v1/users, ADMIN uniquement) POST /" name="renvoie 400 si le mot de passe est trop court" time="0.026">
+    </testcase>
+    <testcase classname="API – utilisateurs (/v1/users, ADMIN uniquement) PUT /:id" name="met à jour un utilisateur existant" time="0.022">
+    </testcase>
+    <testcase classname="API – utilisateurs (/v1/users, ADMIN uniquement) PUT /:id" name="renvoie 404 si l&apos;utilisateur n&apos;existe pas" time="0.023">
+    </testcase>
+    <testcase classname="API – utilisateurs (/v1/users, ADMIN uniquement) DELETE /:id" name="supprime un utilisateur existant" time="0.023">
+    </testcase>
+  </testsuite>
+</testsuites>

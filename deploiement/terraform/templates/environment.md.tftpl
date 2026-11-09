@@ -1,0 +1,15 @@
+# Environnement de déploiement (généré par Terraform)
+
+| Élément | Valeur |
+|---|---|
+| Serveur | ${vm_name} |
+| Système attendu | ${specs.os} |
+| Ressources minimales | ${specs.vcpu} vCPU, ${specs.ram_mb} Mo RAM, ${specs.disk_gb} Go disque |
+| Réseau | ${specs.network} |
+| Adresse IP | ${vm_ip} |
+| Utilisateur SSH | ${ssh_user} |
+| Répertoire de déploiement | ${deploy_dir} |
+| URL de santé de l'API | http://${vm_ip}:${api_port}/v1/health |
+
+Variables CI/CD GitLab correspondantes : `DEPLOY_HOST=${vm_ip}`, `DEPLOY_USER=${ssh_user}`,
+`DEPLOY_DIR=${deploy_dir}`, `API_PORT=${api_port}`.

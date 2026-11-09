@@ -1,0 +1,10 @@
+# Inventaire SSH du serveur de déploiement.
+# Généré automatiquement par Terraform (deploiement/terraform) dans inventory.ini,
+# ou à copier manuellement : cp inventory.ini.example inventory.ini
+# inventory.ini n'est pas versionné (adresse et chemin de clé propres au poste).
+
+[deploy_servers]
+souverainrecrut-vm ansible_host=192.168.x.x ansible_user=deploy ansible_ssh_private_key_file=~/.ssh/souverainrecrut_deploy
+
+[deploy_servers:vars]
+ansible_python_interpreter=/usr/bin/python3

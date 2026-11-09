@@ -1,0 +1,90 @@
+
+> souverainrecrut-backend@1.0.0 test:ci
+> jest --ci --coverage
+
+PASS tests/unit/config.test.ts (9.357 s)
+PASS tests/unit/utils.test.ts (9.442 s)
+PASS tests/unit/application.service.test.ts (9.499 s)
+PASS tests/unit/default-pagination.test.ts (9.556 s)
+PASS tests/unit/middlewares.test.ts (9.624 s)
+PASS tests/api/dashboard.test.ts (12.153 s)
+PASS tests/api/app.test.ts (12.304 s)
+PASS tests/api/auth.test.ts (12.404 s)
+PASS tests/api/jobs.test.ts (12.383 s)
+PASS tests/api/applications.test.ts (12.392 s)
+PASS tests/api/candidates.test.ts (12.504 s)
+PASS tests/api/users.test.ts (12.743 s)
+----------------------------|---------|----------|---------|---------|-------------------
+File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+----------------------------|---------|----------|---------|---------|-------------------
+All files                   |     100 |      100 |     100 |     100 |                   
+ src                        |     100 |      100 |     100 |     100 |                   
+  app.ts                    |     100 |      100 |     100 |     100 |                   
+ src/config                 |     100 |      100 |     100 |     100 |                   
+  env.ts                    |     100 |      100 |     100 |     100 |                   
+ src/controllers            |     100 |      100 |     100 |     100 |                   
+  application.controller.ts |     100 |      100 |     100 |     100 |                   
+  auth.controller.ts        |     100 |      100 |     100 |     100 |                   
+  candidate.controller.ts   |     100 |      100 |     100 |     100 |                   
+  dashboard.controller.ts   |     100 |      100 |     100 |     100 |                   
+  health.controller.ts      |     100 |      100 |     100 |     100 |                   
+  info.controller.ts        |     100 |      100 |     100 |     100 |                   
+  job.controller.ts         |     100 |      100 |     100 |     100 |                   
+  user.controller.ts        |     100 |      100 |     100 |     100 |                   
+ src/errors                 |     100 |      100 |     100 |     100 |                   
+  app.error.ts              |     100 |      100 |     100 |     100 |                   
+ src/middlewares            |     100 |      100 |     100 |     100 |                   
+  auth.middleware.ts        |     100 |      100 |     100 |     100 |                   
+  authorize.middleware.ts   |     100 |      100 |     100 |     100 |                   
+  cors.middleware.ts        |     100 |      100 |     100 |     100 |                   
+  error.middleware.ts       |     100 |      100 |     100 |     100 |                   
+  logger.middleware.ts      |     100 |      100 |     100 |     100 |                   
+  not-found.middleware.ts   |     100 |      100 |     100 |     100 |                   
+  validate.middleware.ts    |     100 |      100 |     100 |     100 |                   
+ src/repositories           |     100 |      100 |     100 |     100 |                   
+  application.repository.ts |     100 |      100 |     100 |     100 |                   
+  candidate.repository.ts   |     100 |      100 |     100 |     100 |                   
+  dashboard.repository.ts   |     100 |      100 |     100 |     100 |                   
+  job.repository.ts         |     100 |      100 |     100 |     100 |                   
+  user.repository.ts        |     100 |      100 |     100 |     100 |                   
+ src/routes                 |     100 |      100 |     100 |     100 |                   
+  application.routes.ts     |     100 |      100 |     100 |     100 |                   
+  auth.routes.ts            |     100 |      100 |     100 |     100 |                   
+  candidate.routes.ts       |     100 |      100 |     100 |     100 |                   
+  dashboard.routes.ts       |     100 |      100 |     100 |     100 |                   
+  health.routes.ts          |     100 |      100 |     100 |     100 |                   
+  index.ts                  |     100 |      100 |     100 |     100 |                   
+  info.routes.ts            |     100 |      100 |     100 |     100 |                   
+  job.routes.ts             |     100 |      100 |     100 |     100 |                   
+  user.routes.ts            |     100 |      100 |     100 |     100 |                   
+ src/services               |     100 |      100 |     100 |     100 |                   
+  application.service.ts    |     100 |      100 |     100 |     100 |                   
+  auth.service.ts           |     100 |      100 |     100 |     100 |                   
+  candidate.service.ts      |     100 |      100 |     100 |     100 |                   
+  dashboard.service.ts      |     100 |      100 |     100 |     100 |                   
+  health.service.ts         |     100 |      100 |     100 |     100 |                   
+  info.service.ts           |     100 |      100 |     100 |     100 |                   
+  job.service.ts            |     100 |      100 |     100 |     100 |                   
+  user.service.ts           |     100 |      100 |     100 |     100 |                   
+ src/utils                  |     100 |      100 |     100 |     100 |                   
+  async-handler.ts          |     100 |      100 |     100 |     100 |                   
+  pagination.ts             |     100 |      100 |     100 |     100 |                   
+ src/validators             |     100 |      100 |     100 |     100 |                   
+  application.schema.ts     |     100 |      100 |     100 |     100 |                   
+  candidate.schema.ts       |     100 |      100 |     100 |     100 |                   
+  job.schema.ts             |     100 |      100 |     100 |     100 |                   
+  user.schema.ts            |     100 |      100 |     100 |     100 |                   
+----------------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 100% ( 491/491 )
+Branches     : 100% ( 54/54 )
+Functions    : 100% ( 99/99 )
+Lines        : 100% ( 487/487 )
+================================================================================
+
+Test Suites: 12 passed, 12 total
+Tests:       97 passed, 97 total
+Snapshots:   0 total
+Time:        15.477 s, estimated 16 s
+Ran all test suites.

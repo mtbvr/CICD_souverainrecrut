@@ -70,6 +70,10 @@ Modifications apportées au Dockerfile fourni :
 | — | `HEALTHCHECK` sur `/v1/health` | État de santé visible par Docker / Compose |
 | — | labels OCI (version, commit, date) | Traçabilité image ↔ code |
 | `prisma` en devDependency | `prisma` en dependency | Permet `prisma migrate deploy` depuis l'image lors du déploiement |
+| npm, npx, corepack, yarn présents | Supprimés de l'image finale | Inutiles à l'exécution, ils embarquaient 10 vulnérabilités HIGH |
+
+Résultat du durcissement (Trivy) : de **26 HIGH à 1 HIGH**, 0 CRITICAL. Détail et risque résiduel
+accepté dans [`reports/README.md`](reports/README.md).
 
 ### Stratégie de tags
 
@@ -114,9 +118,10 @@ Créer le job : *New Item* → nom `souverainrecrut-backend-ci` → **Pipeline**
 | Branch Specifier | `*/dev` |
 | Script Path | `integration-continue/Jenkinsfile` |
 
-Déclenchement : *Build Now*, ou *Poll SCM* (`H/5 * * * *`) pour un build automatique à
-chaque push sur `dev` (la VM n'étant pas joignable depuis GitHub, un webhook GitHub n'est pas
-utilisable sans tunnel).
+Déclenchement **automatique** : `triggers { pollSCM('H/5 * * * *') }` dans le Jenkinsfile. Jenkins
+vérifie le dépôt toutes les ~5 minutes et lance un build à chaque nouveau commit sur `dev`.
+Le déclencheur est enregistré par Jenkins lors du **premier build manuel** qui suit son ajout.
+Un webhook GitHub n'est pas utilisable : Jenkins n'est pas exposé sur Internet (accès par tunnel SSH).
 
 ## Gestion des secrets
 
