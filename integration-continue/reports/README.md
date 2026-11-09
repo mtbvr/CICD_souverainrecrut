@@ -58,5 +58,11 @@ Levée prévue lors de la migration vers Prisma 7.
 | [`08-sonarqube-issues.png`](captures/08-sonarqube-issues.png) | Problèmes relevés : `X-Powered-By`, `parseInt` |
 | [`09-jenkins-pipeline-builds-1-a-4.png`](captures/09-jenkins-pipeline-builds-1-a-4.png) | Historique complet : #1 bloqué (Trivy), #3 bloqué (Quality Gate), #4 vert |
 | [`10-sonarqube-quality-gate-passed.png`](captures/10-sonarqube-quality-gate-passed.png) | Résultat final : A / A / A, 0 problème, couverture 100 %, gate Passed |
+| [`11-jenkins-tests-97-reussis.png`](captures/11-jenkins-tests-97-reussis.png) | Résultats JUnit publiés par Jenkins : 97 tests réussis |
+| [`12-jenkins-couverture-100.png`](captures/12-jenkins-couverture-100.png) | Couverture publiée par Jenkins : 100 %, tendance sur les builds #1 à #4 |
+| [`13-sonarqube-tableau-de-bord.png`](captures/13-sonarqube-tableau-de-bord.png) | Tableau de bord SonarQube : gate Passed, 0 problème, 0 % de duplication |
+| [`14-sonarqube-webhook-livraison-ok.png`](captures/14-sonarqube-webhook-livraison-ok.png) | Webhook SonarQube → Jenkins configuré, dernière livraison réussie |
+| [`15-jenkins-credentials.png`](captures/15-jenkins-credentials.png) | Credentials Jenkins : identifiants uniquement, valeurs masquées |
+| [`16-dockerhub-depot.png`](captures/16-dockerhub-depot.png) | Dépôt Docker Hub `mtbvr/souverainrecrut-backend` |
 
 > Aucun fichier de ce dossier ne contient de secret (token, mot de passe, `.env`).
