@@ -83,8 +83,13 @@ cd souverainrecrut/integration-continue/lab
    - Main branch : `dev`
 3. **Générer un token** pour Jenkins : *My Account → Security → Generate Tokens*
    - Name : `jenkins`, Type : *Global Analysis Token* → copier le token.
-4. **Webhook vers Jenkins** (nécessaire à l'étape *Quality Gate* du pipeline) :
-   *Administration → Configuration → Webhooks → Create*
+4. **Webhook vers Jenkins** (nécessaire à l'étape *Quality Gate* du pipeline).
+   SonarQube refuse par défaut les webhooks vers des adresses privées (protection SSRF), or
+   `jenkins` résout vers une IP du réseau Docker `ci`. Désactiver d'abord ce contrôle :
+   *Administration → Configuration → General Settings → Security* → décocher
+   **Enable local webhooks validation** (`sonar.validateWebhooks`). Acceptable ici : la seule cible
+   est Jenkins, sur le réseau privé du lab, et l'administration de SonarQube n'est accessible
+   que par tunnel SSH. Puis *Administration → Configuration → Webhooks → Create*
    - Name : `jenkins`
    - URL : `http://jenkins:8080/sonarqube-webhook/` (résolution DNS interne au réseau `ci`)
 
