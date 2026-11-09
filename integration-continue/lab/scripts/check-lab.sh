@@ -8,6 +8,9 @@ set -uo pipefail
 LAB_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$LAB_DIR"
 
+JP="$(grep -E '^JENKINS_PORT=' .env 2>/dev/null | cut -d= -f2)"; export JP="${JP:-8080}"
+SP="$(grep -E '^SONAR_PORT=' .env 2>/dev/null | cut -d= -f2)";   export SP="${SP:-9000}"
+
 FAILED=0
 check() {
   local label="$1"; shift
@@ -24,10 +27,10 @@ docker compose ps --format "table {{.Name}}\t{{.State}}\t{{.Status}}"
 echo
 
 echo "== Services"
-check "Jenkins répond (8080)" \
-  sh -c 'curl -fsS -o /dev/null -w "HTTP %{http_code}" http://localhost:8080/login'
-check "SonarQube status UP (9000)" \
-  sh -c 'curl -fsS http://localhost:9000/api/system/status | grep -o "\"status\":\"UP\""'
+check "Jenkins répond (port $JP)" \
+  sh -c 'curl -fsS -o /dev/null -w "HTTP %{http_code}" "http://localhost:$JP/login"'
+check "SonarQube status UP (port $SP)" \
+  sh -c 'curl -fsS "http://localhost:$SP/api/system/status" | grep -o "\"status\":\"UP\""'
 check "Jenkins -> SonarQube (réseau ci)" \
   docker exec jenkins curl -fsS -o /dev/null -w "HTTP %{http_code}" http://sonarqube:9000/api/system/status
 echo

@@ -138,6 +138,10 @@ Même stack, mais le serveur est exposé sur Internet. Différences :
   ```bash
   ssh -L 8080:localhost:8080 -L 9000:localhost:9000 <utilisateur>@<IP_VPS>
   ```
+- Serveur qui héberge déjà des conteneurs : `setup-vm.sh` ne réinstalle pas Docker et ne lance pas
+  d'`apt upgrade` (pas de coupure des services). Si un port est pris, le changer au premier lancement :
+  `JENKINS_PORT=8081 ./scripts/start-lab.sh --vps` (le port interne reste 8080, le webhook
+  SonarQube `http://jenkins:8080/...` est inchangé).
 - Prérequis : x86_64 (amd64), 8 Go de RAM, 4 vCPU. Le VPS ne doit pas héberger d'autres services
   sensibles (l'accès de Jenkins au socket Docker équivaut à un accès root).
 

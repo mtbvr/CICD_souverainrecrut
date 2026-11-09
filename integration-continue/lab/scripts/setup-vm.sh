@@ -28,22 +28,30 @@ fi
 
 TARGET_USER="${SUDO_USER:-root}"
 
-echo "==> Mise à jour du système"
 export DEBIAN_FRONTEND=noninteractive
-apt-get update
-apt-get -y upgrade
-apt-get install -y ca-certificates curl gnupg git ufw
 
-echo "==> Installation de Docker Engine et Docker Compose"
-install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-chmod a+r /etc/apt/keyrings/docker.asc
-. /etc/os-release
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${UBUNTU_CODENAME:-$VERSION_CODENAME} stable" \
-  > /etc/apt/sources.list.d/docker.list
-apt-get update
-apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-systemctl enable --now docker
+if command -v docker > /dev/null && docker compose version > /dev/null 2>&1; then
+  # Serveur existant : on ne touche ni à Docker ni aux paquets installés
+  # (évite de redémarrer le démon et de couper les conteneurs en place)
+  echo "==> Docker déjà installé : installation et mise à jour du système ignorées"
+  apt-get install -y --no-upgrade ca-certificates curl git ufw
+else
+  echo "==> Mise à jour du système"
+  apt-get update
+  apt-get -y upgrade
+  apt-get install -y ca-certificates curl gnupg git ufw
+
+  echo "==> Installation de Docker Engine et Docker Compose"
+  install -m 0755 -d /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  chmod a+r /etc/apt/keyrings/docker.asc
+  . /etc/os-release
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${UBUNTU_CODENAME:-$VERSION_CODENAME} stable" \
+    > /etc/apt/sources.list.d/docker.list
+  apt-get update
+  apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  systemctl enable --now docker
+fi
 
 if [[ "$TARGET_USER" != "root" ]]; then
   usermod -aG docker "$TARGET_USER"

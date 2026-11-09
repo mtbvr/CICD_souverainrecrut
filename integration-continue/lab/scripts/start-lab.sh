@@ -26,6 +26,8 @@ if [[ ! -f .env ]]; then
   DB_PASSWORD="$(openssl rand -hex 24)"
 
   sed -e "s/^BIND_ADDRESS=.*/BIND_ADDRESS=${BIND_ADDRESS}/" \
+      -e "s/^JENKINS_PORT=.*/JENKINS_PORT=${JENKINS_PORT:-8080}/" \
+      -e "s/^SONAR_PORT=.*/SONAR_PORT=${SONAR_PORT:-9000}/" \
       -e "s/^DOCKER_GID=.*/DOCKER_GID=${DOCKER_GID}/" \
       -e "s/^SONAR_DB_PASSWORD=.*/SONAR_DB_PASSWORD=${DB_PASSWORD}/" \
       .env.example > .env
@@ -43,15 +45,18 @@ docker compose up -d --build
 echo
 docker compose ps
 echo
+JP="$(grep -E '^JENKINS_PORT=' .env | cut -d= -f2)"; JP="${JP:-8080}"
+SP="$(grep -E '^SONAR_PORT=' .env | cut -d= -f2)";   SP="${SP:-9000}"
+
 if grep -q "^BIND_ADDRESS=127.0.0.1" .env; then
   echo "Mode VPS : ports accessibles uniquement via tunnel SSH. Depuis ton poste :"
-  echo "  ssh -L 8080:localhost:8080 -L 9000:localhost:9000 $(whoami)@<IP_VPS>"
-  echo "Jenkins   : http://localhost:8080"
-  echo "SonarQube : http://localhost:9000  (démarrage ~1 à 2 min)"
+  echo "  ssh -L ${JP}:localhost:${JP} -L ${SP}:localhost:${SP} $(whoami)@<IP_VPS>"
+  echo "Jenkins   : http://localhost:${JP}"
+  echo "SonarQube : http://localhost:${SP}  (démarrage ~1 à 2 min)"
 else
   IP="$(hostname -I | awk '{print $1}')"
-  echo "Jenkins   : http://${IP}:8080"
-  echo "SonarQube : http://${IP}:9000  (démarrage ~1 à 2 min)"
+  echo "Jenkins   : http://${IP}:${JP}"
+  echo "SonarQube : http://${IP}:${SP}  (démarrage ~1 à 2 min)"
 fi
 echo
 echo "Mot de passe initial Jenkins :"
