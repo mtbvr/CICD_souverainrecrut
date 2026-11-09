@@ -1,0 +1,22 @@
+# Pipeline
+workflow-aggregator
+pipeline-stage-view
+pipeline-utility-steps
+timestamper
+ws-cleanup
+
+# Git / GitHub
+git
+github
+
+# Secrets
+credentials-binding
+
+# Qualité : SonarQube, rapports de tests et couverture
+sonar
+junit
+coverage
+htmlpublisher
+
+# Docker
+docker-workflow

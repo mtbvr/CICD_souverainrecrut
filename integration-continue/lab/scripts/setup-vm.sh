@@ -4,15 +4,26 @@
 #   - mise à jour du système
 #   - Docker Engine + plugin Compose (dépôt officiel Docker)
 #   - paramètres noyau requis par SonarQube (Elasticsearch)
-#   - pare-feu (SSH, Jenkins, SonarQube)
+#   - pare-feu (SSH, + Jenkins/SonarQube en mode VM locale)
 #
-# Usage : sudo ./scripts/setup-vm.sh
+# Usage : sudo ./scripts/setup-vm.sh          (VM VMware locale)
+#         sudo ./scripts/setup-vm.sh --vps    (VPS exposé sur Internet :
+#                                              seul SSH est ouvert)
 # =============================================================
 set -euo pipefail
+
+MODE="vm"
+[[ "${1:-}" == "--vps" ]] && MODE="vps"
 
 if [[ "$(id -u)" -ne 0 ]]; then
   echo "Ce script doit être lancé avec sudo." >&2
   exit 1
+fi
+
+ARCH="$(dpkg --print-architecture)"
+if [[ "$ARCH" != "amd64" ]]; then
+  echo "ATTENTION : architecture $ARCH. L'image backend construite ici ne tournera pas"
+  echo "            sur une VM x86_64 sans build multi-architecture."
 fi
 
 TARGET_USER="${SUDO_USER:-root}"
@@ -46,10 +57,18 @@ fs.file-max=131072
 EOF
 sysctl --system > /dev/null
 
-echo "==> Pare-feu"
-ufw allow OpenSSH
-ufw allow 8080/tcp comment "Jenkins"
-ufw allow 9000/tcp comment "SonarQube"
+echo "==> Pare-feu (mode $MODE)"
+# Ouvre le(s) port(s) SSH réellement configurés pour ne pas perdre l'accès
+SSH_PORTS="$(sshd -T 2>/dev/null | awk '/^port /{print $2}' | sort -u)"
+for PORT in ${SSH_PORTS:-22}; do
+  ufw allow "${PORT}/tcp" comment "SSH"
+done
+if [[ "$MODE" == "vm" ]]; then
+  ufw allow 8080/tcp comment "Jenkins"
+  ufw allow 9000/tcp comment "SonarQube"
+fi
+# NB : Docker contourne UFW pour les ports publiés. En mode VPS, la protection
+# repose sur BIND_ADDRESS=127.0.0.1 (cf. start-lab.sh --vps).
 ufw --force enable
 
 echo
@@ -58,4 +77,8 @@ docker --version
 docker compose version
 echo "vm.max_map_count = $(sysctl -n vm.max_map_count)"
 echo
-echo "Étape suivante : se reconnecter en SSH puis lancer ./scripts/start-lab.sh"
+if [[ "$MODE" == "vps" ]]; then
+  echo "Étape suivante : se reconnecter en SSH puis lancer ./scripts/start-lab.sh --vps"
+else
+  echo "Étape suivante : se reconnecter en SSH puis lancer ./scripts/start-lab.sh"
+fi
