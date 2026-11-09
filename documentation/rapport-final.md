@@ -12,6 +12,8 @@ Architecture détaillée : [`architecture.md`](architecture.md).
 
 ## 2. Partie 1 – Intégration continue (Jenkins)
 
+Compte rendu détaillé, avec captures : [`rapport-seance1-integration-continue.pdf`](rapport-seance1-integration-continue.pdf).
+
 ### Réalisations
 
 | Exigence du cahier des charges | Réalisation | Preuve |
@@ -22,7 +24,7 @@ Architecture détaillée : [`architecture.md`](architecture.md).
 | Jenkins + Jenkinsfile versionné | Pipeline déclaratif, 10 étapes, déclenchement automatique (poll SCM) | [`Jenkinsfile`](../integration-continue/Jenkinsfile) |
 | Image reproductible, sans secret | Multi-étapes, `.dockerignore`, non-root, healthcheck, labels OCI | [`Dockerfile`](../backend/Dockerfile) |
 | Tags explicites et traçables | `<version>-<commit>` immuable + `dev` | [`README`](../integration-continue/README.md#stratégie-de-tags) |
-| Scan Trivy + seuils | CRITICAL corrigeable bloquant ; HIGH 26 → 1 après durcissement | [`trivy-report.txt`](../integration-continue/reports/trivy-report.txt) |
+| Scan Trivy + seuils | CRITICAL corrigeable bloquant ; HIGH 26 → 1 après durcissement (build #5, `1.0.0-8b039e7`) | [`trivy-report.txt`](../integration-continue/reports/trivy-report.txt) |
 | Publication conditionnée | Push Docker Hub en dernière étape, uniquement si tout est vert | [capture 09](../integration-continue/reports/captures/09-jenkins-pipeline-builds-1-a-4.png) |
 | Secrets hors dépôt | Credentials Jenkins, access token Docker Hub, `--password-stdin` | [`README`](../integration-continue/README.md#gestion-des-secrets) |
 

@@ -1,8 +1,14 @@
-# Lab CI – Jenkins + SonarQube sur VMware
+# Lab CI – Jenkins + SonarQube (VM VMware ou VPS)
 
-Environnement d'intégration continue du projet SouverainRecrut : une VM Ubuntu Server
+Environnement d'intégration continue du projet SouverainRecrut : un serveur Ubuntu
 hébergeant, via Docker Compose, **Jenkins** (orchestration CI) et **SonarQube** (qualité
 + Quality Gate) avec sa base **PostgreSQL**.
+
+> **Mise en œuvre réelle de ce projet : sur un VPS** (Ubuntu 24.04, x86_64), faute de ressources
+> suffisantes sur le poste pour une VM de 8 Go. Les commandes utilisées sont celles de la
+> [variante VPS](#variante--lab-sur-un-vps) : `setup-vm.sh --vps` (UFW activé, SSH seul ouvert),
+> puis `JENKINS_PORT=8081 ./scripts/start-lab.sh --vps` (port 8080 déjà occupé sur ce serveur).
+> Le parcours VMware ci-dessous reste valable à l'identique.
 
 ```
  VM Ubuntu Server 24.04 (VMware)
@@ -57,8 +63,8 @@ Depuis le poste hôte : `ssh <utilisateur>@<IP_VM>`.
 ## 2. Préparation de la VM
 
 ```bash
-git clone https://github.com/<VOTRE_UTILISATEUR>/souverainrecrut.git
-cd souverainrecrut/integration-continue/lab
+git clone https://github.com/mtbvr/CICD_souverainrecrut.git
+cd CICD_souverainrecrut/integration-continue/lab
 chmod +x scripts/*.sh
 sudo ./scripts/setup-vm.sh
 exit                      # se reconnecter pour appliquer le groupe docker
@@ -67,7 +73,7 @@ exit                      # se reconnecter pour appliquer le groupe docker
 ## 3. Démarrage de la stack
 
 ```bash
-cd souverainrecrut/integration-continue/lab
+cd CICD_souverainrecrut/integration-continue/lab
 ./scripts/start-lab.sh
 ./scripts/check-lab.sh    # relancer si SonarQube n'est pas encore UP
 ```
