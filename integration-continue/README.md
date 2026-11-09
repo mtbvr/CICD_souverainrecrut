@@ -18,7 +18,7 @@ GitHub (dev) ─▶ Jenkins ─▶ npm ci ─▶ prisma generate ─▶ tsc ─�
 | Tests | [`backend/tests/`](../backend/tests/), [`jest.config.js`](../backend/jest.config.js) | Jest + Supertest, Prisma mocké |
 | SonarQube | [`sonar/`](sonar/) + [`backend/sonar-project.properties`](../backend/sonar-project.properties) | Paramètres d'analyse et Quality Gate |
 | Rapports | [`reports/`](reports/) | Rapports de tests, couverture, SonarQube, Trivy, captures |
-| Lab | [`lab/`](lab/) | VM VMware : Jenkins + SonarQube en Docker Compose |
+| Lab | [`lab/`](lab/) | Jenkins + SonarQube en Docker Compose (VM VMware ou VPS ; ce projet : VPS) |
 
 ## Étapes du pipeline
 
@@ -113,8 +113,8 @@ Créer le job : *New Item* → nom `souverainrecrut-backend-ci` → **Pipeline**
 |---|---|
 | Definition | Pipeline script from SCM |
 | SCM | Git |
-| Repository URL | `https://github.com/<VOTRE_UTILISATEUR>/souverainrecrut.git` |
-| Credentials | aucun (fork public) ou `github-credentials` |
+| Repository URL | `https://github.com/mtbvr/CICD_souverainrecrut.git` |
+| Credentials | aucun (dépôt public) ou `github-credentials` |
 | Branch Specifier | `*/dev` |
 | Script Path | `integration-continue/Jenkinsfile` |
 

@@ -11,9 +11,11 @@
 | [`trivy-report.json`](trivy-report.json) | Scan Trivy complet de l'image (toutes sévérités) | Archivage, analyse |
 | [`trivy-report.txt`](trivy-report.txt) | Scan Trivy, sévérités HIGH et CRITICAL (tableau) | Lecture |
 
-Ces rapports sont produits par les mêmes commandes que le pipeline (`npm run test:ci`, Trivy
-0.76.1), exécutées sur l'état final du dépôt. Les rapports de chaque build Jenkins sont en outre
-archivés comme artefacts (*Build Artifacts*) : `backend/reports/` et `backend/coverage/`.
+Les rapports Trivy sont les **artefacts du build Jenkins #5**, qui a scanné et publié l'image
+`1.0.0-8b039e7` (label `org.opencontainers.image.revision` = `8b039e7519be91ede111497f44e18b0a5d0be1c7`).
+Les rapports de tests et de couverture sont produits par la même commande que le pipeline
+(`npm run test:ci`). Chaque build Jenkins archive en outre ses rapports comme artefacts
+(*Build Artifacts*) : `backend/reports/` et `backend/coverage/`.
 
 ### Synthèse des tests
 
@@ -29,9 +31,9 @@ archivés comme artefacts (*Build Artifacts*) : `backend/reports/` et `backend/c
 |---|---|---|---|---|---|
 | Build #1 `1.0.0-61c559b` | **1** (`proxy-addr`) | – | – | – | **Bloqué** |
 | `1.0.0-172892d` | 0 | 26 | 20 | 3 | Passé |
-| Image durcie (état actuel du dépôt) | 0 | **1** | 4 | 0 | Passé |
+| Build #5 `1.0.0-8b039e7` (image durcie, référence) | 0 | **1** | 4 | 0 | Passé |
 
-Actions menées entre `1.0.0-172892d` et l'image durcie :
+Actions menées entre `1.0.0-172892d` et `1.0.0-8b039e7` :
 
 | Origine des vulnérabilités | Action | Effet |
 |---|---|---|

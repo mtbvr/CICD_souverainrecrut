@@ -38,7 +38,7 @@ echo
 echo "== Outils dans le conteneur Jenkins"
 check "Node.js >= 22" docker exec jenkins node --version
 check "npm" docker exec jenkins npm --version
-check "Docker CLI -> daemon de la VM" \
+check "Docker CLI -> daemon de l'hôte" \
   docker exec jenkins docker version --format "Server {{.Server.Version}}"
 check "Docker buildx" docker exec jenkins docker buildx version
 check "git" docker exec jenkins git --version

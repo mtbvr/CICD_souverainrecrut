@@ -46,16 +46,14 @@ un gate **FAILED** arrête le build **avant** la construction et la publication 
 ## Revue des Security Hotspots
 
 Les hotspots ne sont pas des vulnérabilités confirmées mais des points à vérifier
-manuellement (*Security Hotspots* dans le projet). Pour chacun : analyser puis marquer
-*Safe* (avec justification) ou *Fixed*. Exemples attendus sur ce projet :
-
-- **CORS** (`cors.middleware.ts`) : origine limitée à `FRONTEND_URL`, pas de `*` → *Safe*.
-- **Mots de passe en dur** dans les tests (`tests/**`) : données factices de test → *Safe*.
+manuellement. **L'analyse finale n'en relève aucun** (0 hotspot, note A). Si un hotspot
+apparaît, il est analysé puis marqué *Safe* (avec justification) ou *Fixed* : tant qu'il
+n'est pas revu, la condition « Security Hotspots Reviewed < 100 % » fait échouer le gate.
 
 ## Résultats
 
-Captures à placer dans [`../reports/`](../reports/) :
-
-- tableau de bord du projet (bugs, vulnérabilités, code smells, hotspots, couverture, duplications) ;
-- statut du Quality Gate **Passed** ;
-- détail du Quality Gate `SouverainRecrut`.
+| Étape | Résultat | Capture |
+|---|---|---|
+| Conditions du gate `SouverainRecrut` | Code global + nouveau code | [05](../reports/captures/05-sonarqube-quality-gate-conditions.png) |
+| Build #3 | **Failed** : Reliability C (`parseInt`), Security B (`X-Powered-By`) | [07](../reports/captures/07-sonarqube-quality-gate-failed.png) |
+| Corrections, build #4 | **Passed** : A / A / A, 0 problème, 0 hotspot, couverture 100 %, duplications 0 % | [10](../reports/captures/10-sonarqube-quality-gate-passed.png), [13](../reports/captures/13-sonarqube-tableau-de-bord.png) |
