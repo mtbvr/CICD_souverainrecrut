@@ -1,0 +1,25 @@
+# Dépendances et artefacts locaux (reconstruits dans l'image)
+node_modules
+dist
+
+# Secrets : jamais dans l'image
+.env
+.env.*
+!.env.example
+
+# Tests, rapports et outillage CI
+tests
+coverage
+reports
+.scannerwork
+jest.config.js
+tsconfig.test.json
+sonar-project.properties
+
+# Divers
+Dockerfile
+.dockerignore
+.git
+.gitignore
+*.log
+*.md

@@ -1,0 +1,95 @@
+# =============================================================
+# Déploiement SouverainRecrut : API Backend + PostgreSQL
+#
+# L'image Backend n'est JAMAIS reconstruite ici : elle est tirée
+# de Docker Hub (publiée par Jenkins), identifiée par son tag
+# <version>-<commit> (BACKEND_TAG).
+#
+# Ordre de démarrage :
+#   db (healthy) -> migrate (prisma migrate deploy, terminé OK) -> api
+#
+# Usage (sur le serveur, via scripts/deploy.sh) :
+#   docker compose pull && docker compose up -d
+# =============================================================
+name: souverainrecrut
+
+x-backend-image: &backend-image "${BACKEND_IMAGE:?BACKEND_IMAGE manquant}:${BACKEND_TAG:?BACKEND_TAG manquant}"
+
+x-database-url: &database-url "postgresql://${POSTGRES_USER:-souverainrecrut}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant}@db:5432/${POSTGRES_DB:-souverainrecrut}?schema=public"
+
+services:
+  # -----------------------------------------------------------
+  # PostgreSQL : données persistantes, aucun port exposé
+  # -----------------------------------------------------------
+  db:
+    image: postgres:${POSTGRES_IMAGE_TAG:-17-alpine}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-souverainrecrut}
+      POSTGRES_USER: ${POSTGRES_USER:-souverainrecrut}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  # -----------------------------------------------------------
+  # Migrations Prisma : conteneur éphémère, exécuté avant l'API
+  # avec la MÊME image que l'API (migrations embarquées dans l'image)
+  # -----------------------------------------------------------
+  migrate:
+    image: *backend-image
+    # npm/npx sont absents de l'image : appel direct du binaire Prisma
+    command: ["node_modules/.bin/prisma", "migrate", "deploy"]
+    restart: "no"
+    environment:
+      DATABASE_URL: *database-url
+      CHECKPOINT_DISABLE: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend
+
+  # -----------------------------------------------------------
+  # API Backend
+  # -----------------------------------------------------------
+  api:
+    image: *backend-image
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      API_VERSION: v1
+      DATABASE_URL: *database-url
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET manquant}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    ports:
+      - "${API_PORT:-4000}:4000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - backend
+
+networks:
+  backend:
+    name: souverainrecrut-backend
+
+volumes:
+  db_data:
+    name: souverainrecrut-db-data

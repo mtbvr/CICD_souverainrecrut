@@ -1,0 +1,243 @@
+# =============================================================
+# Préparation du serveur de déploiement SouverainRecrut
+# (VM Ubuntu Server 24.04 sous VMware)
+#
+#   - mise à jour du système et dépendances
+#   - Docker Engine + plugin Compose (dépôt officiel Docker)
+#   - service Docker activé et démarré
+#   - répertoire de déploiement
+#   - pare-feu (SSH + port de l'API)
+#   - [optionnel, tag "runner"] GitLab Runner auto-hébergé
+#   - vérification du fonctionnement
+#
+# Usage :
+#   ansible-galaxy collection install -r requirements.yml
+#   ansible-playbook -i inventory.ini playbook.yml
+#   ansible-playbook -i inventory.ini playbook.yml --tags runner \
+#       -e gitlab_runner_token=glrt-xxxxxxxx
+# =============================================================
+- name: Préparer le serveur de déploiement
+  hosts: deploy_servers
+  become: true
+
+  vars:
+    deploy_user: "{{ ansible_user }}"
+    deploy_dir: /opt/souverainrecrut
+    api_port: 4000
+    docker_packages:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    # GitLab Runner (exécute les jobs du pipeline de déploiement)
+    gitlab_url: https://gitlab.com
+    gitlab_runner_image: gitlab/gitlab-runner:alpine-v19.5.1
+    gitlab_runner_dir: /srv/gitlab-runner
+    gitlab_runner_token: ""
+
+  tasks:
+    # ---------------------------------------------------------
+    # Système
+    # ---------------------------------------------------------
+    - name: Mettre à jour le cache APT et les paquets
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: safe
+        cache_valid_time: 3600
+      tags: [system]
+
+    - name: Installer les dépendances
+      ansible.builtin.apt:
+        name: [ca-certificates, curl, gnupg, jq, ufw, python3]
+        state: present
+      tags: [system]
+
+    # ---------------------------------------------------------
+    # Docker Engine + Compose
+    # ---------------------------------------------------------
+    - name: Créer le répertoire des clés APT
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+      tags: [docker]
+
+    - name: Télécharger la clé GPG de Docker
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+      tags: [docker]
+
+    - name: Ajouter le dépôt officiel Docker
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}
+          signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+        filename: docker
+        state: present
+      tags: [docker]
+
+    - name: Installer Docker Engine et le plugin Compose
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: true
+      tags: [docker]
+
+    - name: Activer et démarrer le service Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        enabled: true
+        state: started
+      tags: [docker]
+
+    - name: Autoriser l'utilisateur de déploiement à utiliser Docker
+      ansible.builtin.user:
+        name: "{{ deploy_user }}"
+        groups: docker
+        append: true
+      tags: [docker]
+
+    - name: Réinitialiser la connexion (prise en compte du groupe docker)
+      ansible.builtin.meta: reset_connection
+      tags: [docker]
+
+    # ---------------------------------------------------------
+    # Répertoire de déploiement
+    # ---------------------------------------------------------
+    - name: Créer le répertoire de déploiement
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: "0750"
+      loop:
+        - "{{ deploy_dir }}"
+        - "{{ deploy_dir }}/scripts"
+      tags: [deploy-dir]
+
+    # ---------------------------------------------------------
+    # Pare-feu
+    # NB : Docker gère ses propres règles iptables pour les ports
+    # publiés ; seul le port de l'API est publié par la stack.
+    # ---------------------------------------------------------
+    - name: Autoriser SSH
+      community.general.ufw:
+        rule: allow
+        name: OpenSSH
+      tags: [firewall]
+
+    - name: Autoriser le port de l'API
+      community.general.ufw:
+        rule: allow
+        port: "{{ api_port | string }}"
+        proto: tcp
+        comment: SouverainRecrut API
+      tags: [firewall]
+
+    - name: Activer le pare-feu (refus par défaut en entrée)
+      community.general.ufw:
+        state: enabled
+        policy: deny
+        direction: incoming
+      tags: [firewall]
+
+    # ---------------------------------------------------------
+    # GitLab Runner auto-hébergé (optionnel : --tags runner)
+    # Les runners partagés de gitlab.com ne peuvent pas joindre une VM
+    # locale : le runner tourne sur la VM et exécute les jobs en conteneur.
+    # ---------------------------------------------------------
+    - name: Vérifier que le token du runner est fourni
+      ansible.builtin.assert:
+        that: gitlab_runner_token | length > 0
+        fail_msg: "Fournir le token : -e gitlab_runner_token=glrt-..."
+      tags: [runner, never]
+
+    - name: Créer le répertoire de configuration du runner
+      ansible.builtin.file:
+        path: "{{ gitlab_runner_dir }}/config"
+        state: directory
+        mode: "0700"
+      tags: [runner, never]
+
+    - name: Enregistrer le runner auprès de GitLab
+      ansible.builtin.command:
+        argv:
+          - docker
+          - run
+          - --rm
+          - -v
+          - "{{ gitlab_runner_dir }}/config:/etc/gitlab-runner"
+          - "{{ gitlab_runner_image }}"
+          - register
+          - --non-interactive
+          - --url
+          - "{{ gitlab_url }}"
+          - --token
+          - "{{ gitlab_runner_token }}"
+          - --executor
+          - docker
+          - --docker-image
+          - alpine:3.22
+          - --description
+          - "souverainrecrut-{{ inventory_hostname }}"
+        creates: "{{ gitlab_runner_dir }}/config/config.toml"
+      no_log: true
+      tags: [runner, never]
+
+    - name: Démarrer le runner
+      ansible.builtin.command:
+        argv:
+          - docker
+          - run
+          - -d
+          - --name
+          - gitlab-runner
+          - --restart
+          - unless-stopped
+          - -v
+          - "{{ gitlab_runner_dir }}/config:/etc/gitlab-runner"
+          - -v
+          - /var/run/docker.sock:/var/run/docker.sock
+          - "{{ gitlab_runner_image }}"
+      register: runner_start
+      failed_when: runner_start.rc != 0 and 'already in use' not in runner_start.stderr
+      changed_when: runner_start.rc == 0
+      tags: [runner, never]
+
+    # ---------------------------------------------------------
+    # Vérifications
+    # ---------------------------------------------------------
+    - name: Vérifier Docker Engine
+      ansible.builtin.command: docker version --format '{{ "{{" }}.Server.Version{{ "}}" }}'
+      register: docker_version
+      changed_when: false
+      become: false
+      tags: [verify]
+
+    - name: Vérifier Docker Compose
+      ansible.builtin.command: docker compose version --short
+      register: compose_version
+      changed_when: false
+      become: false
+      tags: [verify]
+
+    - name: Lancer un conteneur de test
+      ansible.builtin.command: docker run --rm hello-world
+      register: hello
+      changed_when: false
+      become: false
+      tags: [verify]
+
+    - name: Afficher le résultat
+      ansible.builtin.debug:
+        msg:
+          - "Docker Engine : {{ docker_version.stdout }}"
+          - "Docker Compose : {{ compose_version.stdout }}"
+          - "Conteneur de test : {{ 'OK' if 'Hello from Docker!' in hello.stdout else 'ÉCHEC' }}"
+          - "Répertoire de déploiement : {{ deploy_dir }}"
+      tags: [verify]

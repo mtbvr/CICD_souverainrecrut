@@ -1,0 +1,9 @@
+# Généré par Terraform (deploiement/terraform) : ne pas modifier à la main.
+
+[deploy_servers]
+${vm_name} ansible_host=${vm_ip} ansible_user=${ssh_user} ansible_ssh_private_key_file=${ssh_private_key_path}
+
+[deploy_servers:vars]
+ansible_python_interpreter=/usr/bin/python3
+api_port=${api_port}
+deploy_dir=${deploy_dir}

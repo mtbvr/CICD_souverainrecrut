@@ -1,0 +1,19 @@
+# Terraform : état, plugins et variables locales
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/terraform.tfvars
+terraform/environment.md
+terraform/.terraform.lock.hcl.bak
+
+# Ansible : inventaire propre au poste (généré par Terraform)
+ansible/inventory.ini
+
+# Déploiement : configuration réelle
+deployment/.env
+deployment/releases.log
+
+# Clés
+*.pem
+*_deploy
+*_deploy.pub

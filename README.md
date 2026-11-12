@@ -1,5 +1,25 @@
 # SouverainRecrut
 
+## Projet fil rouge CI/CD – livrables
+
+Industrialisation du **Backend** de SouverainRecrut (module CI/CD, Mastère RNCP 40166) –
+Matéo Bouvier. Le Frontend est hors périmètre.
+
+| Séance | Contenu | Où |
+|---|---|---|
+| 1 – Intégration continue | Jenkinsfile, tests Jest, SonarQube + Quality Gate, Dockerfile, Trivy, publication Docker Hub | [`integration-continue/`](integration-continue/) |
+| 1 – Preuves | Rapports de tests, couverture, Trivy, captures d'écran | [`integration-continue/reports/`](integration-continue/reports/) |
+| 1 – Compte rendu | Rapport de la séance 1 (PDF) | [`documentation/rapport-seance1-integration-continue.pdf`](documentation/rapport-seance1-integration-continue.pdf) |
+| 2 – Déploiement | Terraform, Ansible, Docker Compose, GitLab CI/CD (préparé, à exécuter en séance 2) | [`deploiement/`](deploiement/) |
+| Synthèse | Architecture, procédures de déploiement et de rollback, rapport final | [`documentation/`](documentation/) |
+
+Image publiée : [`mtbvr/souverainrecrut-backend`](https://hub.docker.com/r/mtbvr/souverainrecrut-backend),
+version de référence `1.0.0-8b039e7`.
+
+La suite de ce README est celle du projet d'origine.
+
+---
+
 ## Présentation
 
 SouverainRecrut est une plateforme web de gestion des recrutements destinée aux entreprises.

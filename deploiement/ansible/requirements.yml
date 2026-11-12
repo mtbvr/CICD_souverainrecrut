@@ -1,0 +1,4 @@
+---
+collections:
+  - name: community.general   # module ufw
+    version: ">=9.0.0"

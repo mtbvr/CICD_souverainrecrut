@@ -1,0 +1,248 @@
+// =============================================================
+// Pipeline CI – SouverainRecrut Backend
+//
+// Checkout dev -> npm ci -> Prisma generate -> build TS -> tests + couverture
+// -> analyse SonarQube -> Quality Gate -> build image Docker -> scan Trivy
+// -> publication Docker Hub (uniquement si tous les contrôles sont passés)
+//
+// Prérequis Jenkins (cf. integration-continue/README.md) :
+//   - serveur SonarQube déclaré sous le nom "sonarqube"
+//   - credentials "dockerhub-credentials" (username + access token)
+//   - Node.js 22 et Docker CLI disponibles sur l'agent (image du lab)
+// =============================================================
+
+pipeline {
+  agent any
+
+  // Intégration continue : Jenkins interroge le dépôt toutes les ~5 minutes et
+  // lance un build à chaque nouveau commit sur dev. (Un webhook GitHub n'est pas
+  // possible : Jenkins n'est pas exposé sur Internet, accès par tunnel SSH uniquement.)
+  triggers {
+    pollSCM('H/5 * * * *')
+  }
+
+  options {
+    skipDefaultCheckout(true)
+    timestamps()
+    disableConcurrentBuilds()
+    timeout(time: 45, unit: 'MINUTES')
+    buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '10'))
+  }
+
+  environment {
+    APP_NAME     = 'souverainrecrut-backend'
+    BACKEND_DIR  = 'backend'
+    CI_BRANCH    = 'dev'
+
+    // Version de Trivy épinglée (reproductibilité)
+    TRIVY_IMAGE  = 'aquasec/trivy:0.76.1'
+
+    // Aucune base n'est utilisée par les tests (Prisma mocké) :
+    // valeur factice uniquement pour Prisma, pas un secret.
+    DATABASE_URL = 'postgresql://ci:ci@localhost:5432/ci'
+
+    NPM_CONFIG_FUND  = 'false'
+    NPM_CONFIG_AUDIT = 'false'
+  }
+
+  stages {
+
+    stage('Checkout') {
+      steps {
+        script {
+          // checkout explicite : les variables Git ne sont pas exportées automatiquement
+          def scmVars = checkout scm
+          env.GIT_BRANCH      = scmVars.GIT_BRANCH ?: ''
+          env.GIT_COMMIT_FULL = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+          env.GIT_SHORT       = sh(script: 'git rev-parse --short=7 HEAD', returnStdout: true).trim()
+          env.APP_VERSION     = sh(script: "node -p \"require('./${BACKEND_DIR}/package.json').version\"", returnStdout: true).trim()
+
+          // Tag immuable et traçable : <version applicative>-<commit>
+          env.IMAGE_TAG   = "${env.APP_VERSION}-${env.GIT_SHORT}"
+          env.LOCAL_IMAGE = "${env.APP_NAME}:${env.IMAGE_TAG}"
+
+          currentBuild.displayName = "#${env.BUILD_NUMBER} ${env.IMAGE_TAG}"
+        }
+        sh '''
+          echo "Branche   : ${GIT_BRANCH}"
+          echo "Commit    : ${GIT_COMMIT_FULL}"
+          echo "Version   : ${APP_VERSION}"
+          echo "Image     : ${LOCAL_IMAGE}"
+          node --version
+          npm --version
+          docker version --format 'Docker {{.Server.Version}}'
+        '''
+      }
+    }
+
+    stage('Installation des dépendances') {
+      steps {
+        dir(env.BACKEND_DIR) {
+          sh 'npm ci'
+        }
+      }
+    }
+
+    stage('Génération Prisma') {
+      steps {
+        dir(env.BACKEND_DIR) {
+          sh 'npx prisma generate'
+        }
+      }
+    }
+
+    stage('Compilation TypeScript') {
+      steps {
+        dir(env.BACKEND_DIR) {
+          sh 'npm run build'
+        }
+      }
+    }
+
+    stage('Tests et couverture') {
+      steps {
+        dir(env.BACKEND_DIR) {
+          // Échoue si la couverture passe sous le seuil (80 %) défini dans jest.config.js
+          sh 'npm run test:ci'
+        }
+      }
+      post {
+        always {
+          junit testResults: 'backend/reports/junit.xml', allowEmptyResults: false
+          recordCoverage(
+            tools: [[parser: 'COBERTURA', pattern: 'backend/coverage/cobertura-coverage.xml']],
+            id: 'coverage',
+            name: 'Couverture Jest',
+            sourceCodeRetention: 'LAST_BUILD'
+          )
+          publishHTML(target: [
+            reportName           : 'Couverture (lcov)',
+            reportDir            : 'backend/coverage/lcov-report',
+            reportFiles          : 'index.html',
+            keepAll              : true,
+            alwaysLinkToLastBuild: true,
+            allowMissing         : true
+          ])
+        }
+      }
+    }
+
+    stage('Analyse SonarQube') {
+      steps {
+        withSonarQubeEnv('sonarqube') {
+          dir(env.BACKEND_DIR) {
+            // SONAR_HOST_URL et SONAR_AUTH_TOKEN sont injectés par withSonarQubeEnv
+            sh '''
+              SONAR_TOKEN="$SONAR_AUTH_TOKEN" npm run sonar -- \
+                -Dsonar.projectVersion="$APP_VERSION" \
+                -Dsonar.scm.revision="$GIT_COMMIT_FULL"
+            '''
+          }
+        }
+      }
+    }
+
+    stage('Quality Gate') {
+      steps {
+        // Résultat renvoyé par le webhook SonarQube -> Jenkins
+        timeout(time: 10, unit: 'MINUTES') {
+          waitForQualityGate abortPipeline: true
+        }
+      }
+    }
+
+    stage('Build image Docker') {
+      steps {
+        sh '''
+          docker build --pull \
+            --build-arg APP_VERSION="$APP_VERSION" \
+            --build-arg VCS_REF="$GIT_COMMIT_FULL" \
+            --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -t "$LOCAL_IMAGE" \
+            "$BACKEND_DIR"
+          docker image ls "$APP_NAME"
+        '''
+      }
+    }
+
+    stage('Scan Trivy') {
+      steps {
+        sh '''
+          mkdir -p "$BACKEND_DIR/reports"
+
+          trivy() {
+            docker run --rm \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              -v trivy-cache:/root/.cache/trivy \
+              "$TRIVY_IMAGE" "$@"
+          }
+
+          # 1. Rapport complet (JSON) archivé
+          trivy image --quiet --format json "$LOCAL_IMAGE" \
+            > "$BACKEND_DIR/reports/trivy-report.json"
+
+          # 2. Rapport lisible HIGH + CRITICAL (non bloquant)
+          trivy image --quiet --skip-db-update --severity HIGH,CRITICAL \
+            --format table "$LOCAL_IMAGE" | tee "$BACKEND_DIR/reports/trivy-report.txt"
+
+          # 3. Seuil bloquant : aucune vulnérabilité CRITICAL corrigeable
+          trivy image --quiet --skip-db-update --severity CRITICAL \
+            --ignore-unfixed --exit-code 1 "$LOCAL_IMAGE"
+        '''
+      }
+      post {
+        always {
+          archiveArtifacts artifacts: 'backend/reports/trivy-report.*', allowEmptyArchive: true
+        }
+      }
+    }
+
+    stage('Publication Docker Hub') {
+      when {
+        // Publication réservée à la branche de travail dev
+        expression { (env.GIT_BRANCH ?: '').replaceFirst('^origin/', '') == env.CI_BRANCH }
+      }
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: 'dockerhub-credentials',
+          usernameVariable: 'DOCKERHUB_USER',
+          passwordVariable: 'DOCKERHUB_TOKEN'
+        )]) {
+          // Guillemets simples : les secrets ne sont jamais interpolés par Groovy
+          sh '''
+            echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USER" --password-stdin
+
+            REMOTE="$DOCKERHUB_USER/$APP_NAME"
+            for TAG in "$IMAGE_TAG" "$CI_BRANCH"; do
+              docker tag "$LOCAL_IMAGE" "$REMOTE:$TAG"
+              docker push "$REMOTE:$TAG"
+            done
+
+            docker logout
+          '''
+        }
+        echo "Image publiée : <compte>/${env.APP_NAME}:${env.IMAGE_TAG} (+ tag ${env.CI_BRANCH})"
+      }
+    }
+  }
+
+  post {
+    always {
+      archiveArtifacts artifacts: 'backend/reports/**, backend/coverage/lcov.info, backend/coverage/cobertura-coverage.xml',
+                       allowEmptyArchive: true
+      // Nettoyage des images locales (le cache de couches est conservé)
+      sh '''
+        docker image ls --format '{{.Repository}}:{{.Tag}}' \
+          | grep -E "(^|/)${APP_NAME}:" \
+          | xargs -r docker image rm -f || true
+      '''
+      cleanWs()
+    }
+    success {
+      echo "Pipeline réussi : ${env.IMAGE_TAG}"
+    }
+    failure {
+      echo 'Pipeline en échec : voir les étapes ci-dessus (tests, Quality Gate ou Trivy).'
+    }
+  }
+}

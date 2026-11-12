@@ -1,0 +1,89 @@
+# =============================================================
+# Lab CI SouverainRecrut : Jenkins + SonarQube (+ PostgreSQL)
+# À lancer sur la VM Ubuntu du lab : ./scripts/start-lab.sh
+# =============================================================
+name: souverainrecrut-lab
+
+services:
+  # -----------------------------------------------------------
+  # Jenkins : orchestrateur CI
+  # Image personnalisée : plugins + Node.js 22 + Docker CLI
+  # -----------------------------------------------------------
+  jenkins:
+    build:
+      context: ./jenkins
+    image: souverainrecrut/jenkins-lab:local
+    container_name: jenkins
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${JENKINS_PORT:-8080}:8080"
+    environment:
+      JAVA_OPTS: "-Xmx1g"
+    # Accès au daemon Docker de la VM (build d'image, Trivy, push)
+    group_add:
+      - "${DOCKER_GID:?DOCKER_GID manquant, lancer scripts/start-lab.sh}"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - ci
+
+  # -----------------------------------------------------------
+  # SonarQube : analyse qualité + Quality Gate
+  # -----------------------------------------------------------
+  sonarqube:
+    image: sonarqube:${SONARQUBE_TAG:-community}
+    container_name: sonarqube
+    restart: unless-stopped
+    depends_on:
+      sonar-db:
+        condition: service_healthy
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${SONAR_PORT:-9000}:9000"
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonar-db:5432/${SONAR_DB_NAME:-sonar}
+      SONAR_JDBC_USERNAME: ${SONAR_DB_USER:-sonar}
+      SONAR_JDBC_PASSWORD: ${SONAR_DB_PASSWORD:?SONAR_DB_PASSWORD manquant}
+    ulimits:
+      nofile:
+        soft: 131072
+        hard: 131072
+      nproc: 8192
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    networks:
+      - ci
+
+  # -----------------------------------------------------------
+  # PostgreSQL dédié à SonarQube (pas de port exposé)
+  # -----------------------------------------------------------
+  sonar-db:
+    image: postgres:${POSTGRES_TAG:-17-alpine}
+    container_name: sonar-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${SONAR_DB_NAME:-sonar}
+      POSTGRES_USER: ${SONAR_DB_USER:-sonar}
+      POSTGRES_PASSWORD: ${SONAR_DB_PASSWORD:?SONAR_DB_PASSWORD manquant}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - sonar_db_data:/var/lib/postgresql/data
+    networks:
+      - ci
+
+networks:
+  ci:
+    name: ci
+
+volumes:
+  jenkins_home:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  sonar_db_data:

@@ -1,0 +1,6 @@
+# cp terraform.tfvars.example terraform.tfvars   (terraform.tfvars n'est pas versionné)
+
+vm_ip                = "192.168.x.x"
+ssh_user             = "deploy"
+ssh_private_key_path = "~/.ssh/souverainrecrut_deploy"
+api_port             = 4000

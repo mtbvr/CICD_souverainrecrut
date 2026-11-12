@@ -1,0 +1,201 @@
+# =============================================================
+# Pipeline de déploiement SouverainRecrut (GitLab CI/CD)
+#
+# Récupère l'image Backend PUBLIÉE PAR JENKINS sur Docker Hub (aucune
+# reconstruction) et la déploie sur la VM Ubuntu avec Docker Compose.
+#
+#   validate  -> tag valide + image présente sur Docker Hub + Compose valide
+#   deploy    -> APPROBATION MANUELLE, puis SSH : fichiers, .env, pull, up
+#   verify    -> état des conteneurs + API joignable + tests de fumée
+#   rollback  -> manuel : retour à la version saine précédente (ou ROLLBACK_TAG)
+#
+# Exécuté par un runner AUTO-HÉBERGÉ (tag "souverainrecrut-deploy") installé
+# sur la VM : les runners partagés de gitlab.com ne peuvent pas joindre une
+# VM locale en NAT.
+#
+# Variables CI/CD à définir (Settings > CI/CD > Variables) :
+#   DOCKERHUB_USER       compte Docker Hub                        (visible)
+#   DOCKERHUB_TOKEN      access token Docker Hub, lecture seule   (masked, protected)
+#   DEPLOY_HOST          IP de la VM                              (visible)
+#   DEPLOY_USER          utilisateur SSH de déploiement           (visible)
+#   SSH_PRIVATE_KEY      clé privée de déploiement      [type File] (protected)
+#   SSH_KNOWN_HOSTS      empreinte SSH de la VM         [type File]
+#   POSTGRES_PASSWORD    mot de passe PostgreSQL                  (masked, protected)
+#   JWT_SECRET           secret de signature JWT                  (masked, protected)
+#   BACKEND_TAG          tag à déployer, ex. 1.0.0-172892d (modifiable au lancement)
+#
+# Rollback seul : lancer le pipeline avec BACKEND_TAG vide (et ROLLBACK_TAG
+# éventuel), puis déclencher manuellement le job rollback:production.
+# =============================================================
+
+workflow:
+  rules:
+    # Lancement manuel (Build > Pipelines > Run pipeline) ou via API/trigger
+    - if: $CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api" || $CI_PIPELINE_SOURCE == "trigger"
+    # Modification des fichiers de déploiement sur la branche par défaut
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+stages:
+  - validate
+  - deploy
+  - verify
+  - rollback
+
+variables:
+  BACKEND_TAG:
+    value: ""
+    description: "Tag de l'image Backend à déployer (<version>-<commit>, ex. 1.0.0-172892d)"
+  ROLLBACK_TAG:
+    value: ""
+    description: "Rollback uniquement : tag cible (vide = version saine précédente)"
+  BACKEND_REPOSITORY: "${DOCKERHUB_USER}/souverainrecrut-backend"
+  DEPLOY_DIR: /opt/souverainrecrut
+  API_PORT: "4000"
+  FRONTEND_URL: "http://localhost:5173"
+
+default:
+  tags:
+    - souverainrecrut-deploy
+  image: alpine:3.22
+  interruptible: false
+
+# -------------------------------------------------------------
+# Modèle : client SSH configuré avec la clé de déploiement
+# -------------------------------------------------------------
+.ssh:
+  before_script:
+    - apk add --no-cache openssh-client curl bash > /dev/null
+    - install -m 700 -d ~/.ssh
+    - install -m 600 "$SSH_PRIVATE_KEY" ~/.ssh/id_deploy
+    - install -m 644 "$SSH_KNOWN_HOSTS" ~/.ssh/known_hosts
+    - |
+      cat > ~/.ssh/config <<EOF
+      Host deploy-server
+        HostName ${DEPLOY_HOST}
+        User ${DEPLOY_USER}
+        IdentityFile ~/.ssh/id_deploy
+        IdentitiesOnly yes
+        StrictHostKeyChecking yes
+      EOF
+    - ssh deploy-server 'echo "Connecté à $(hostname)"'
+
+# =============================================================
+# VALIDATE
+# =============================================================
+validate:image-tag:
+  stage: validate
+  rules:
+    # Sans BACKEND_TAG, le pipeline ne propose que le rollback
+    - if: $BACKEND_TAG != ""
+  before_script:
+    - apk add --no-cache curl > /dev/null
+  script:
+    - |
+      if ! echo "$BACKEND_TAG" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-[0-9a-f]{7}$'; then
+        echo "Format de tag invalide : $BACKEND_TAG (attendu <version>-<commit>)" >&2
+        exit 1
+      fi
+    - echo "Recherche de ${BACKEND_REPOSITORY}:${BACKEND_TAG} sur Docker Hub"
+    - |
+      if ! curl -fsS -o /dev/null "https://hub.docker.com/v2/repositories/${BACKEND_REPOSITORY}/tags/${BACKEND_TAG}"; then
+        echo "Image introuvable sur Docker Hub : ${BACKEND_REPOSITORY}:${BACKEND_TAG}" >&2
+        exit 1
+      fi
+    - echo "Image ${BACKEND_REPOSITORY}:${BACKEND_TAG} disponible"
+
+validate:compose:
+  stage: validate
+  image: docker:28-cli
+  script:
+    # Valeurs factices : on valide uniquement la syntaxe et l'interpolation
+    - cd deployment
+    - |
+      BACKEND_IMAGE=docker.io/example/backend BACKEND_TAG=0.0.0-0000000 \
+      POSTGRES_PASSWORD=x JWT_SECRET=x docker compose config --quiet
+    - echo "docker-compose.yml valide"
+
+# =============================================================
+# DEPLOY (approbation manuelle)
+# =============================================================
+deploy:production:
+  stage: deploy
+  extends: .ssh
+  environment:
+    name: production
+    url: http://${DEPLOY_HOST}:${API_PORT}/v1/health
+  resource_group: production          # un seul déploiement à la fois
+  rules:
+    - if: $BACKEND_TAG != ""
+      when: manual                    # approbation avant mise en production
+      allow_failure: false            # le pipeline attend la décision
+  script:
+    - echo "Déploiement de ${BACKEND_REPOSITORY}:${BACKEND_TAG} sur ${DEPLOY_HOST}"
+
+    # 1. Fichiers de déploiement
+    - ssh deploy-server "mkdir -p ${DEPLOY_DIR}/scripts"
+    - scp deployment/docker-compose.yml deploy-server:${DEPLOY_DIR}/docker-compose.yml
+    - scp deployment/scripts/*.sh deploy-server:${DEPLOY_DIR}/scripts/
+    - ssh deploy-server "chmod 750 ${DEPLOY_DIR}/scripts/*.sh"
+
+    # 2. Configuration : .env généré à partir des variables protégées,
+    #    transmis par l'entrée standard (jamais affiché dans les logs)
+    - |
+      printf '%s\n' \
+        "BACKEND_IMAGE=docker.io/${BACKEND_REPOSITORY}" \
+        "BACKEND_TAG=${BACKEND_TAG}" \
+        "API_PORT=${API_PORT}" \
+        "POSTGRES_DB=souverainrecrut" \
+        "POSTGRES_USER=souverainrecrut" \
+        "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" \
+        "JWT_SECRET=${JWT_SECRET}" \
+        "FRONTEND_URL=${FRONTEND_URL}" \
+      | ssh deploy-server "umask 077 && cat > ${DEPLOY_DIR}/.env"
+
+    # 3. Authentification Docker Hub (token par l'entrée standard)
+    - printf '%s' "$DOCKERHUB_TOKEN" | ssh deploy-server "docker login -u '${DOCKERHUB_USER}' --password-stdin"
+
+    # 4. Pull de l'image + démarrage (migrations, healthcheck, tests de fumée,
+    #    retour automatique à la version précédente en cas d'échec)
+    - ssh deploy-server "cd ${DEPLOY_DIR} && ./scripts/deploy.sh ${BACKEND_TAG}"
+  after_script:
+    - ssh -F ~/.ssh/config deploy-server "docker logout" || true
+
+# =============================================================
+# VERIFY
+# =============================================================
+verify:production:
+  stage: verify
+  extends: .ssh
+  needs: ["deploy:production"]
+  rules:
+    - if: $BACKEND_TAG != ""
+  script:
+    - ssh deploy-server "cd ${DEPLOY_DIR} && docker compose ps"
+    - |
+      RUNNING=$(ssh deploy-server "cd ${DEPLOY_DIR} && docker inspect --format '{{.Config.Image}}' \$(docker compose ps -q api)")
+      echo "Image en cours d'exécution : ${RUNNING}"
+      [ "${RUNNING##*:}" = "$BACKEND_TAG" ] || { echo "L'image déployée ne correspond pas à ${BACKEND_TAG}" >&2; exit 1; }
+    - curl -fsS "http://${DEPLOY_HOST}:${API_PORT}/v1/health"
+    - curl -fsS "http://${DEPLOY_HOST}:${API_PORT}/v1/ready"
+    - ssh deploy-server "cd ${DEPLOY_DIR} && ./scripts/smoke-test.sh"
+    - ssh deploy-server "cd ${DEPLOY_DIR} && tail -n 5 releases.log"
+
+# =============================================================
+# ROLLBACK (manuel)
+# =============================================================
+rollback:production:
+  stage: rollback
+  extends: .ssh
+  environment:
+    name: production
+    action: start
+  resource_group: production
+  rules:
+    - when: manual
+      allow_failure: true             # n'empêche pas le pipeline d'être vert
+  script:
+    - ssh deploy-server "cd ${DEPLOY_DIR} && tail -n 10 releases.log"
+    - printf '%s' "$DOCKERHUB_TOKEN" | ssh deploy-server "docker login -u '${DOCKERHUB_USER}' --password-stdin"
+    - ssh deploy-server "cd ${DEPLOY_DIR} && ./scripts/rollback.sh ${ROLLBACK_TAG}"
+  after_script:
+    - ssh -F ~/.ssh/config deploy-server "docker logout" || true
